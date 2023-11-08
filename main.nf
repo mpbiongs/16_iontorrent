@@ -237,7 +237,7 @@ process TABULATE {
 process BARPLOT {
 
     tag "Generate barplot"
-    container "qiime_unzip"
+    container "andrewatmp/qiime_unzip"
     publishDir params.outdir, mode: 'copy'
 
     input:
