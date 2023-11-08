@@ -350,7 +350,8 @@ workflow {
     TABULATE(classification_ch)
 
     BARPLOT(filtered_ch, CLASSIFY.out.classification)
-    
+    MAKETABLE(species_ch, params.logo)
+
     // species_ch = BARPLOT.out.species
     // MAKETABLE(species_ch)
 
