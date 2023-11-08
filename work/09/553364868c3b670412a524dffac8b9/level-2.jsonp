@@ -1,0 +1,1 @@
+load_data(2,["k__Bacteria;p__Bacillota", "k__Bacteria;p__Actinomycetota", "Unassigned;__"],["index", "k__Bacteria;p__Bacillota", "k__Bacteria;p__Actinomycetota", "Unassigned;__"],[{"index":"B2-16s","k__Bacteria;p__Bacillota":1821.0,"k__Bacteria;p__Actinomycetota":1903.0,"Unassigned;__":130.0}]);

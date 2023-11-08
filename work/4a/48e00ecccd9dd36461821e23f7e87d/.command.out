@@ -1,0 +1,5 @@
+R version 4.2.3 (2023-03-15) 
+DADA2: 1.26.0 / Rcpp: 1.0.10 / RcppParallel: 5.1.6 
+2) Filtering .
+3) Learning Error Rates
+2177600 total bases in 5444 reads from 1 samples will be used for learning the error rates.

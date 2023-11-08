@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/home/asum/16s_iontorrent/bin/check_samplesheet.py", line 259, in <module>
+    sys.exit(main())
+  File "/home/asum/16s_iontorrent/bin/check_samplesheet.py", line 255, in main
+    check_samplesheet(args.file_in, args.file_out)
+  File "/home/asum/16s_iontorrent/bin/check_samplesheet.py", line 204, in check_samplesheet
+    checker.validate_and_transform(row)
+  File "/home/asum/16s_iontorrent/bin/check_samplesheet.py", line 74, in validate_and_transform
+    self._validate_second(row)
+  File "/home/asum/16s_iontorrent/bin/check_samplesheet.py", line 94, in _validate_second
+    if len(row[self._second_col]) > 0:
+KeyError: 'fastq_2'
