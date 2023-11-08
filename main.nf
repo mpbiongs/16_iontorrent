@@ -268,17 +268,24 @@ process BARPLOT {
 
 process MAKETABLE {
     tag 'Make Table'
-    container 'andrewatmp/plot'
+    container 'andrewatmp/plot2'
+    stageInMode 'copy'
+    stageOutMode 'copy'
+    publishDir "${params.outdir}", mode: 'copy'
 
     input:
-    path(species_csv)
+    tuple path(species_csv), val(sample_id)
+    path(logo)
+
 
     output:
-    path("species_mqc.html"), emit: table
+    path("${sample_id}_report.html")
+    path(logo)
+    path("${sample_id}.csv")
 
-    script:
+    shell:
     """
-    maketable.py $species_csv "species_mqc.html"
+    writehtml2.py $species_csv --sample_name "${sample_id}" $logo "${sample_id}_report.html"
     """
 }
 
