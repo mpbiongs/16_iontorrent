@@ -1,17 +1,17 @@
-params.reads = "$projectDir/analysis2"
+params.reads = "$projectDir/*.seqs"
 params.fastq = "$projectDir/seqs2/*.fastq.gz"
-params.trunclen = 400
-params.minreads = 50
+params.trunclen = 450
+params.minreads = 100
 params.refseqs = "$projectDir/ncbi-refseqs.qza"
 params.reftax =  "$projectDir/ncbi-refseqs-taxonomy.qza"
 params.maxaccepts = 1
 params.artifacts = "$projectDir/artifacts"
-params.outdir = "$projectDir/results"
+params.outdir = "s3://mp-bioinfo/scratch/results"
+params.logo = "$projectDir/assets/logo.png"
 params.input = "$projectDir/samples.csv"
 
 include { INPUT_CHECK  } from './subworkflows/local/input_check'
 include { SEQTK_SAMPLE } from './modules/local/seqtk/sample'
-
 
 log.info """\
     MP - Q I I M E   P I P E L I N E
@@ -24,67 +24,31 @@ log.info """\
 
 println "reads: $params.reads"
 
-process FASTQC {
-
-    tag "FastQC"
-    container "andrewatmp/testf"
-
-    input:
-    path(reads)
-
-    output:
-    path "*_fastqc.{zip,html}", emit: fastqc_results
-
-    script:
-    """
-    fastqc $reads
-    """
-}
-
 process IMPORT {
-    tag "Importing sequences"
+    tag "Importing sequences ${sample_id}"
     container "andrewatmp/testf"
+    publishDir "$projectDir/results/results_${sample_id}"
 
     input:
-    path(reads)
+    tuple val(sample_id), path(reads)
 
     output:
-    path("demux.qza"), emit: demux
-    path("demux.qzv"), emit: demuxvis
+    path("${sample_id}.demux.qza"), emit: demux
+    path("${sample_id}.demux.qzv"), emit: demuxvis
+    val("${sample_id}"), emit: id
 
     script:
-
     """
     qiime tools import \
     --type 'SampleData[SequencesWithQuality]' \
     --input-path ${reads} \
     --input-format CasavaOneEightSingleLanePerSampleDirFmt \
-    --output-path demux.qza
+    --output-path ${sample_id}.demux.qza
 
     qiime demux summarize \
-    --i-data demux.qza \
-    --o-visualization demux.qzv
-    """
-}
+    --i-data ${sample_id}.demux.qza \
+    --o-visualization ${sample_id}.demux.qzv
 
-process DEMUXVIS {
-
-    tag "Quality Visualization"
-    container "andrewatmp/testf"
-
-
-    input:
-    path(demux)
-
-    output:
-    path("demux.qzv"), emit: demuxvis
-
-    script:
-
-    """
-    qiime demux summarize \
-    --i-data ${demux} \
-    --o-visualization demuxvis.qzv
     """
 }
 
@@ -96,11 +60,13 @@ process DADA {
 
     input:
     path(qza)
+    val(sample_id)
     
     output:
-    path("rep-seqs.qza"), emit: repseqs
-    path("table.qza"), emit: table
-    path("stats.qza"), emit: stats
+    path("${sample_id}.rep-seqs.qza"), emit: repseqs
+    path("${sample_id}.table.qza"), emit: table
+    path("${sample_id}.stats.qza"), emit: stats
+    val("${sample_id}"), emit: ids
 
     script:
 
@@ -108,13 +74,13 @@ process DADA {
     qiime dada2 denoise-pyro \
     --i-demultiplexed-seqs $qza \
     --p-trunc-len ${params.trunclen} \
-    --p-trim-left 0 \
-    --p-trunc-q 4 \
-    --p-max-ee 4 \
-    --p-n-threads 4 \
-    --o-representative-sequences rep-seqs.qza \
-    --o-table table.qza \
-    --o-denoising-stats stats.qza \
+    --p-trim-left 15 \
+    --p-trunc-q 6 \
+    --p-max-ee-f 2 \
+    --p-max-ee-r 2 \
+    --o-representative-sequences ${sample_id}.rep-seqs.qza \
+    --o-table ${sample_id}.table.qza \
+    --o-denoising-stats ${sample_id}.stats.qza \
     --verbose
     """
 
@@ -127,9 +93,12 @@ process MINREADS {
 
     input:
     path(table)
+    val(sample_id)
+
 
     output:
-    path("filtered-table.qza"), emit: filtered
+    tuple val(sample_id), path("filtered-table.qza"), emit: filtered
+
 
     script:
 
@@ -151,7 +120,10 @@ process DADARESULTS {
     path(repseqs)
     path(table)
     path(stats)
-    path(filtered)
+    val(foo)
+    tuple val(sample_id), path(filtered)
+
+  
 
     output:
     path("rep-seqs.qzv"), emit: repseqsvis
@@ -191,10 +163,11 @@ process CLASSIFY {
     path(refseqs)
     path(reftax)
     path(repseqs)
+    val(sample_id)
 
     output:
-    path("classification.qza"), emit: classification
     path("blastresults.qza"), emit: blastresults
+    tuple val("${sample_id}"), path("classification.qza"), emit: classification
 
     script:
 
@@ -205,7 +178,6 @@ process CLASSIFY {
     --i-reference-taxonomy $reftax \
     --p-maxaccepts ${params.maxaccepts} \
     --p-perc-identity 0.99 \
-    --p-query-cov 0.7 \
     --o-classification classification.qza \
     --o-search-results blastresults.qza 
     """
@@ -214,9 +186,11 @@ process CLASSIFY {
 process TABULATE {
 
     tag "Tabulate Classify Results"
+    container "andrewatmp/testf"
     input:
     path(classification)
     path(blastresults)
+    val(sample_id)
 
     output:
     path("classification.qzv"), emit: classificationvis
@@ -238,16 +212,16 @@ process BARPLOT {
 
     tag "Generate barplot"
     container "andrewatmp/qiime_unzip"
-    publishDir params.outdir, mode: 'copy'
+    publishDir "$projectDir/results/results_${sample_id}", mode: 'copy'
 
     input:
-    path(filtered)
-    path(classification)
-
+    tuple val(sample_id), path(filtered), path(classification)
+    
     output:
     path("taxa-bar-plots.qzv"), emit: barplot
     path("*"), emit: data
-    path("level-7.csv"), emit: species
+    tuple path("${sample_id}.level-7.csv"), val("${sample_id}"), emit: species
+    
 
     script:
 
@@ -261,6 +235,7 @@ process BARPLOT {
     unzip taxa-bar-plots.qzv '*/data/*' -d extracted
     mv extracted/*/data/* .
     mv index.html Taxonomy_mqc.html
+    for file in *.csv; do mv "\$file" "${sample_id}.\$file"; done
     rm -rf extracted
     """
 
@@ -309,22 +284,6 @@ process MULTIQC {
     """
 }
 
-process MULTIQC2 {
-
-    tag "MultiQC2"
-    container "andrewatmp/multiqc"
-
-    input:
-    path(params.outdir)
-
-    script:
-    """
-    multiqc .
-    """
-}
-
-
-
 
 workflow {
 
@@ -340,27 +299,38 @@ workflow {
 
     SEQTK_SAMPLE.out.dir.view()
 
-    IMPORT(SEQTK_SAMPLE.out.dir)
 
-    dada_ch = DADA(IMPORT.out.demux)
-    filtered_ch = MINREADS(DADA.out.table)
-    DADARESULTS(dada_ch, filtered_ch)
+    SEQTK_SAMPLE.out.dir
+        .map {file -> 
+            def sampleName = file.name.replaceAll(/\.seqs$/, '')
+            return [sampleName, file]
+        }
+        .set{samples_ch}
 
-    classification_ch = CLASSIFY(params.refseqs, params.reftax, DADA.out.repseqs)
-    TABULATE(classification_ch)
 
-    BARPLOT(filtered_ch, CLASSIFY.out.classification)
+    IMPORT(samples_ch)
+
+    dada_ch = DADA(IMPORT.out.demux, IMPORT.out.id)
+    filtered_ch = MINREADS(DADA.out.table, DADA.out.ids)
+    DADARESULTS(dada_ch, MINREADS.out.filtered)
+
+    classification_ch = CLASSIFY(params.refseqs, params.reftax, DADA.out.repseqs, DADA.out.ids)
+    // TABULATE(classification_ch)
+
+    ch1 = MINREADS.out.filtered
+    ch2 = CLASSIFY.out.classification
+    joined_ch = ch1.join(ch2, by :[0])
+
+
+    BARPLOT(joined_ch)
+    
+    species_ch = (BARPLOT.out.species)
     MAKETABLE(species_ch, params.logo)
 
-    // species_ch = BARPLOT.out.species
-    // MAKETABLE(species_ch)
-
-    //multiqc_files = Channel.empty()
-    //multiqc_files = multiqc_files.mix(FASTQC.out.fastqc_results)
-    //multiqc_files = multiqc_files.mix(BARPLOT.out.data)
-    //multiqc_files = multiqc_files.mix(MAKETABLE.out.table)
-    //MULTIQC(multiqc_files.collect())
-    // BARPLOT.out.data.view()
-
-    // MULTIQC2(BARPLOT.out.data)
+    multiqc_files = Channel.empty()
+    // multiqc_files = multiqc_files.mix(FASTQC.out.fastqc_results)
+    // multiqc_files = multiqc_files.mix(BARPLOT.out.data)
+    // multiqc_files = multiqc_files.mix(MAKETABLE.out.table)
+    // MULTIQC(multiqc_files.collect())
+    BARPLOT.out.data.view()
 }
