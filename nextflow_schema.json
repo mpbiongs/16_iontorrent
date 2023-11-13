@@ -19,7 +19,6 @@
                 "Truncation Length": {
                     "type": "integer",
                     "description": "Integer value of truncation length",
-                    "help_text": "Enter value to truncate to",
                     "fa_icon": "fas fa-cut"
                 },
                 "Min Reads": {
