@@ -1,5 +1,3 @@
-params.reads = "$projectDir/*.seqs"
-params.fastq = "$projectDir/seqs2/*.fastq.gz"
 params.trunclen = 450
 params.minreads = 100
 params.refseqs = "$projectDir/ncbi-refseqs.qza"
