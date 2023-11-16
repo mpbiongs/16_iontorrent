@@ -31,12 +31,12 @@
                     "description": "Minimum number of reads to pass filter",
                     "fa_icon": "fas fa-hashtag"
                 },
-                "RefSeqs": {
+                "refseqs": {
                     "type": "string",
                     "description": "Qiime artifact for reference dna sequences",
                     "fa_icon": "fas fa-folder-open"
                 },
-                "RefTax": {
+                "reftax": {
                     "type": "string",
                     "description": "Qiime artifact for reference taxonomy",
                     "fa_icon": "fas fa-folder-open"
