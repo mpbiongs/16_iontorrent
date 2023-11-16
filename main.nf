@@ -174,7 +174,7 @@ process CLASSIFY {
     --i-reference-reads $refseqs \
     --i-reference-taxonomy $reftax \
     --p-maxaccepts ${params.maxaccepts} \
-    --p-perc-identity 0.99 \
+    --p-perc-identity 0.985 \
     --o-classification classification.qza \
     --o-search-results blastresults.qza 
     """
