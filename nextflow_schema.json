@@ -47,7 +47,7 @@
                     "fa_icon": "fas fa-hashtag"
                 }
             },
-            "required": ["input"],
+            "required": ["input", "outdir"],
             "fa_icon": "fas fa-terminal"
         }
     },
