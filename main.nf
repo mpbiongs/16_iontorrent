@@ -73,8 +73,8 @@ process DADA {
     --i-demultiplexed-seqs $qza \
     --p-trunc-len ${params.trunclen} \
     --p-trim-left 15 \
-    --p-trunc-q 3 \
-    --p-max-ee 1 \
+    --p-trunc-q 6 \
+    --p-max-ee 2 \
     --o-representative-sequences ${sample_id}.rep-seqs.qza \
     --o-table ${sample_id}.table.qza \
     --o-denoising-stats ${sample_id}.stats.qza \
