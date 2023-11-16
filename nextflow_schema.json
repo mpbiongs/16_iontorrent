@@ -16,6 +16,11 @@
                     "fa_icon": "fas fa-dna",
                     "description": "Either a tab-separated sample sheet, a fasta file, or a folder containing zipped FastQ files"
                 },
+                "outdir": {
+                    "type": "string",
+                    "fa_icon": "fas fa-folder-open",
+                    "description": "S3 output directory"
+                },
                 "Truncation Length": {
                     "type": "integer",
                     "description": "Integer value of truncation length",
